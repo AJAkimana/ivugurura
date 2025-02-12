@@ -4,7 +4,12 @@ import path from "path";
 import { Topic } from "../models";
 import { ConstantHelper } from "./ConstantHelper";
 import { QueryHelper } from "./QueryHelper";
-import { ACCEPTED_FILE_SIZE, isFileAllowed, serverResponse } from "./util";
+import {
+  ACCEPTED_FILE_SIZE,
+  filePathsMap,
+  isFileAllowed,
+  serverResponse,
+} from "./util";
 
 const dbTopicHelper = new QueryHelper(Topic);
 const storage = multer.diskStorage({
@@ -31,14 +36,12 @@ export const uploadSingle = multer({
 export const uploadMany = multer({ storage }).array("file");
 
 export const uploadSingleFile = async (req, res) => {
-  let fileStorage = null;
   const { fileType } = req.params;
   const { prevFile, update } = req.query;
-  if (fileType === "image") {
-    fileStorage = process.env.IMAGES_ZONE;
-  } else if (fileType === "song") {
-    fileStorage = process.env.SONGS_ZONE;
-  } else return serverResponse(res, 400, "Unknown file upload");
+
+  const fileStorage = filePathsMap[fileType];
+  if (!fileStorage) return serverResponse(res, 400, "Unknown file upload");
+
   /**
    * Delete the previous file if exist
    */
@@ -71,6 +74,8 @@ export const uploadSingleFile = async (req, res) => {
   }).single("file");
 
   return upload(req, res, async uploadError => {
+    console.log(req.file);
+
     if (uploadError instanceof multer.MulterError || uploadError) {
       const errorMsg = uploadError.message || uploadError;
       return serverResponse(res, 500, errorMsg);
