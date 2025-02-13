@@ -55,7 +55,7 @@ albumRoutes.delete(
 albumRoutes.post(
   "/upload/:fileType",
   isAdmin,
-  isFileTypeValid,
+  // isFileTypeValid,
   catchErrors(uploadSingleFile),
 );
 albumRoutes.delete(
