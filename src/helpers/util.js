@@ -143,35 +143,40 @@ export const systemRoles = { superAdmin: 1, admin: 2, editor: 3 };
 /**
  *
  * @param {File} file File info
- * @param {String} filePath Where file will be saved
+ * @param {String} fileType Where file will be saved
  * @param {Function} fileCallBack Callback function
  */
-export const isFileAllowed = (file, filePath, fileCallBack) => {
-  const images = process.env.IMAGES_ZONE;
-  const audios = process.env.SONGS_ZONE;
-  // Allowed exts
-  const allowedImages = /jpeg|jpg|png/;
-  const allowedAudios = /mp3|mpeg/;
+export const isFileAllowed = (file, fileType, fileCallBack) => {
+  const filesMap = {
+    images: {
+      allowed: /jpeg|jpg|png/,
+      error: "Error: only (jpeg, jpg or png) images allowed",
+    },
+    audios: {
+      allowed: /mp3|mpeg/,
+      error: "Error: only (mp3, mpeg) audio allowed",
+    },
+    files: {
+      allowed: /pdf/,
+      error: "Error: only (pdf) files allowed",
+    },
+  };
+  const mappedFile = filesMap[fileType];
   // Check ext
-  let extname = false;
+  const extname = mappedFile?.allowed.test(
+    path.extname(file.originalname).toLowerCase(),
+  );
   // Check mime
-  let mimetype = false;
-  let errorMessage = "";
-  if (filePath === images) {
-    extname = allowedImages.test(path.extname(file.originalname).toLowerCase());
-    mimetype = allowedImages.test(file.mimetype);
-    errorMessage = "Error: only (jpeg, jpg or png) images allowed";
-  }
-  if (filePath === audios) {
-    extname = allowedAudios.test(path.extname(file.originalname).toLowerCase());
-    mimetype = allowedAudios.test(file.mimetype);
-    errorMessage = "Error: only (mp3, mpeg) audio allowed";
-  }
+  const mimetype = mappedFile?.allowed.test(file.mimetype);
 
   if (mimetype && extname) {
     return fileCallBack(null, true);
   }
-  return fileCallBack(errorMessage);
+  const errorMsg =
+    mappedFile?.error ||
+    "Error: only (jpeg, jpg, png, mp3, mpeg, pdf) files allowed";
+
+  return fileCallBack(errorMsg);
 };
 export const filePathsMap = {
   image: process.env.IMAGES_ZONE,
