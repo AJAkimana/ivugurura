@@ -39,21 +39,21 @@ export const uploadSingleFile = async (req, res) => {
   const { fileType } = req.params;
   const { prevFile, update } = req.query;
 
-  const fileStorage = filePathsMap[fileType];
-  if (!fileStorage) return serverResponse(res, 400, "Unknown file upload");
+  const filesDir = filePathsMap[fileType];
+  if (!filesDir) return serverResponse(res, 400, "Unknown file upload");
 
   /**
    * Delete the previous file if exist
    */
-  if (!existsSync(fileStorage)) {
-    mkdirSync(fileStorage, { recursive: true });
+  if (!existsSync(filesDir)) {
+    mkdirSync(filesDir, { recursive: true });
   }
   if (prevFile) {
-    unlink(`${fileStorage}/${prevFile}`, () => {});
+    unlink(`${filesDir}/${prevFile}`, () => {});
   }
   const diskStorage = multer.diskStorage({
     destination: (req, file, callBack) => {
-      callBack(null, fileStorage);
+      callBack(null, filesDir);
     },
     filename: (req, file, callBack) => {
       let ext = path.extname(file.originalname).split(".")[1];
@@ -66,7 +66,10 @@ export const uploadSingleFile = async (req, res) => {
     storage: diskStorage,
     limits: { fileSize: ACCEPTED_FILE_SIZE },
     fileFilter: (req, file, filterCallBack) => {
-      isFileAllowed(file, fileStorage, (error, allowed) => {
+      let type = "images";
+      if (fileType === "song") type = "audios";
+      if (fileType === "bookFile") type = "files";
+      isFileAllowed(file, type, (error, allowed) => {
         if (error) return filterCallBack(error);
         return filterCallBack(null, allowed);
       });
@@ -74,8 +77,6 @@ export const uploadSingleFile = async (req, res) => {
   }).single("file");
 
   return upload(req, res, async uploadError => {
-    console.log(req.file);
-
     if (uploadError instanceof multer.MulterError || uploadError) {
       const errorMsg = uploadError.message || uploadError;
       return serverResponse(res, 500, errorMsg);
