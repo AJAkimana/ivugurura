@@ -11,13 +11,12 @@ const categoryTb = new QueryHelper(BookCategory);
  * @param {import('express').Response} res
  */
 export const registerBook = async (req, res) => {
-  const { title, author, description, categoryId } = req.body;
+  const { bookFile, bookCover, ...rest } = req.body;
 
   const book = await bookTb.create({
-    title,
-    author,
-    description,
-    categoryId,
+    url: bookFile,
+    coverImage: bookCover,
+    ...rest,
   });
 
   return serverResponse(res, 200, "Success", book);
