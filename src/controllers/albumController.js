@@ -194,9 +194,10 @@ export const downloadSong = async (req, res) => {
     return serverResponse(res, 400, `You can't download this file`);
   }
   const songsDir = process.env.SONGS_ZONE;
-  readdir(songsDir, async (error, audios) => {
-    if (error)
+  return readdir(songsDir, async (error, audios) => {
+    if (error) {
       return serverResponse(res, 503, `Sorry service not available. SDL`);
+    }
     if (audios.indexOf(media.mediaLink) === -1) {
       return serverResponse(res, 503, "The song does not exist");
     }
