@@ -131,6 +131,17 @@ export class ConstantHelper {
       languageId: Joi.number().required(),
     };
   }
+  bookKeys() {
+    return {
+      name: Joi.string().required(),
+      languageId: Joi.number(),
+      categoryId: Joi.number().required(),
+      author: Joi.string().required(),
+      summary: Joi.string().required(),
+      bookCover: Joi.string().required(),
+      bookFile: Joi.string().required(),
+    };
+  }
   albumIncludes() {
     return [
       {
@@ -196,7 +207,7 @@ export class ConstantHelper {
       },
     ];
   }
-  topicCategorIncludes() {
+  topicCategorIncludes(topicId) {
     return [
       {
         model: Category,
@@ -224,7 +235,7 @@ export class ConstantHelper {
     ];
   }
   oneTopicIncludes(topicId) {
-    return [...this.topicIncludes(), ...this.topicCategorIncludes()];
+    return [...this.topicIncludes(), ...this.topicCategorIncludes(topicId)];
   }
   getTopicDisplayIncludes(toIncludeDisplay = false, conditions = {}) {
     return toIncludeDisplay

@@ -46,6 +46,9 @@ export class ValidatorHelper extends ConstantHelper {
       case "commentReply":
         validateKeys = Joi.object().keys(this.commentReplyKeys());
         break;
+      case "book":
+        validateKeys = Joi.object().keys(this.bookKeys());
+        break;
       default:
         break;
     }
