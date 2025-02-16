@@ -1,6 +1,6 @@
-import path from "path";
+// import path from "path";
 import { createReadStream, existsSync } from "fs";
-import { QueryHelper, serverResponse } from "../helpers";
+import { filePathsMap, QueryHelper, serverResponse } from "../helpers";
 import { Book, BookCategory } from "../models";
 
 const bookTb = new QueryHelper(Book);
@@ -53,14 +53,22 @@ export const readBook = async (req, res) => {
   const { bookId } = req.params;
   const book = await bookTb.findOne({ id: bookId });
 
-  const filePath = path.join(__dirname, "pdfs", book?.url);
+  const filePath = `${filePathsMap.bookFile}/${book?.url}`;
+
   if (!existsSync(filePath)) {
     return serverResponse(res, 404, "Book not found");
   }
 
   res.setHeader("Content-Type", "application/pdf");
-  res.setHeader("Content-Disposition", "inline"); // Inline view, no download
-  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("Content-Disposition", "inline"); // Forces viewing, not downloading
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, proxy-revalidate",
+  );
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  res.setHeader("Referrer-Policy", "no-referrer");
 
   const fileStream = createReadStream(filePath);
   return fileStream.pipe(res);
