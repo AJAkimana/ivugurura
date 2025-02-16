@@ -9,7 +9,7 @@ import { configurePassport } from "./config/passport";
 import { sequelize } from "./models";
 import routes from "./routes";
 import { handleErrors } from "./middlewares";
-import { corseOptions, security } from "./config/security";
+import { allowedOrigins, corseOptions, security } from "./config/security";
 import { appSocket } from "./config/socketIo";
 import { session } from "./config/session";
 import { dbBackup } from "./crons";
@@ -19,6 +19,18 @@ import "dotenv/config";
 const app = express();
 
 app.use(cors(corseOptions));
+app.use((req, res, next) => {
+  const origin = req.headers.origin || req.headers.referer.replace(/\/$/, "");
+
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader("X-Frame-Options", `ALLOW-FROM ${origin}`); // Change accordingly
+    res.setHeader(
+      "Content-Security-Policy",
+      `frame-ancestors 'self' ${origin}`,
+    );
+  }
+  next();
+});
 app.use(capture());
 app.use(userAgent.express());
 app.set("trust proxy", true);
@@ -44,6 +56,7 @@ app.use(express.json({ limit: "100mb" }));
 app.use(express.static(buildDir));
 app.use("/songs", express.static("public/songs"));
 app.use("/images", express.static("public/images"));
+app.use("/covers", express.static("public/books/bookCovers"));
 /**
  * Initialize passport and session
  */

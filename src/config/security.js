@@ -1,12 +1,11 @@
 import helmet from "helmet";
-import { getMimeType } from "../helpers";
 
 // Here you can spoof any back end
 const SPOOFED_SERVER = "Phusion Passenger (mod_rails/mod_rack) 3.0.11";
 
 export const security = app => {
   app
-    .use(helmet({ contentSecurityPolicy: false }))
+    .use(helmet({ contentSecurityPolicy: false, xFrameOptions: "sameorigin" }))
     .use(helmet.noSniff())
     .use(helmet.frameguard({ action: "deny" }))
     .use(helmet.xssFilter())
@@ -19,7 +18,7 @@ export const security = app => {
 /**
  * TODO: Allow dev to dev server and production likewise
  */
-const allowedOrigins = [
+export const allowedOrigins = [
   "http://localhost:3000", // Allow localhost
   "https://reformationvoice.org",
   "https://dev.reformationvoice.org",
