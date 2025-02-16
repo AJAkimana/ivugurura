@@ -24,17 +24,34 @@ export const generatJWT = userInfo => {
   const token = jwt.sign(userInfo, process.env.SECRET, { expiresIn: "1w" });
   return token;
 };
+
+/**
+ *
+ * @param {import ('express').Response} res
+ * @param {number} statusCode
+ * @param {string} message
+ * @param {*} data
+ * @param {number} totalItems
+ * @returns {import('express').Response}
+ */
 export const serverResponse = (
   res,
   statusCode,
   message,
   data,
-  totalItems = 0,
+  totalItems = undefined,
 ) => {
   const messageType = statusCode >= 400 ? "error" : "message";
-  return res
-    .status(statusCode)
-    .json({ status: statusCode, [messageType]: message, data, totalItems });
+
+  if (!totalItems && Array.isArray(data)) {
+    totalItems = data.length;
+  }
+  return res.status(statusCode).json({
+    status: statusCode,
+    [messageType]: message,
+    data,
+    totalItems,
+  });
 };
 export const joiValidatorMsg = (res, result) => {
   const errors = [];
@@ -73,11 +90,12 @@ export const authenticatedUser = async req => {
     const token = headers.authorization;
     try {
       const { id } = verify(token, process.env.SECRET);
-      const user = await dbUser.findOne({ id });
-      if (user.id) {
-        return user;
+      const existingUser = await dbUser.findOne({ id });
+      if (existingUser.id) {
+        return existingUser;
       }
     } catch (error) {
+      console.log(error.message);
       return null;
     }
   } else if (useragent.browser === "PostmanRuntime" && req.isAuthenticated()) {
@@ -125,36 +143,46 @@ export const systemRoles = { superAdmin: 1, admin: 2, editor: 3 };
 /**
  *
  * @param {File} file File info
- * @param {String} filePath Where file will be saved
+ * @param {String} fileType Where file will be saved
  * @param {Function} fileCallBack Callback function
  */
-export const isFileAllowed = (file, filePath, fileCallBack) => {
-  const images = process.env.IMAGES_ZONE;
-  const audios = process.env.SONGS_ZONE;
-  // Allowed exts
-  const allowedImages = /jpeg|jpg|png/;
-  const allowedAudios = /mp3|mpeg/;
+export const isFileAllowed = (file, fileType, fileCallBack) => {
+  const filesMap = {
+    images: {
+      allowed: /jpeg|jpg|png/,
+      error: "Error: only (jpeg, jpg or png) images allowed",
+    },
+    audios: {
+      allowed: /mp3|mpeg/,
+      error: "Error: only (mp3, mpeg) audio allowed",
+    },
+    files: {
+      allowed: /pdf/,
+      error: "Error: only (pdf) files allowed",
+    },
+  };
+  const mappedFile = filesMap[fileType];
   // Check ext
-  let extname = false;
+  const extname = mappedFile?.allowed.test(
+    path.extname(file.originalname).toLowerCase(),
+  );
   // Check mime
-  let mimetype = false;
-  let errorMessage = "";
-  if (filePath === images) {
-    extname = allowedImages.test(path.extname(file.originalname).toLowerCase());
-    mimetype = allowedImages.test(file.mimetype);
-    errorMessage = "Error: only (jpeg, jpg or png) images allowed";
-  }
-  if (filePath === audios) {
-    extname = allowedAudios.test(path.extname(file.originalname).toLowerCase());
-    mimetype = allowedAudios.test(file.mimetype);
-    errorMessage = "Error: only (mp3, mpeg) audio allowed";
-  }
+  const mimetype = mappedFile?.allowed.test(file.mimetype);
 
   if (mimetype && extname) {
     return fileCallBack(null, true);
-  } else {
-    fileCallBack(errorMessage);
   }
+  const errorMsg =
+    mappedFile?.error ||
+    "Error: only (jpeg, jpg, png, mp3, mpeg, pdf) files allowed";
+
+  return fileCallBack(errorMsg);
+};
+export const filePathsMap = {
+  image: process.env.IMAGES_ZONE,
+  song: process.env.SONGS_ZONE,
+  bookCover: process.env.BOOK_COVERS_ZONE,
+  bookFile: process.env.BOOK_FILES_ZONE,
 };
 const MB = 1024 * 1024;
 export const ACCEPTED_FILE_SIZE = 100 * MB; //100 mbs
